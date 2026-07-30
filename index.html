@@ -41,11 +41,9 @@
 <link rel="apple-touch-icon" href="assets/images/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preconnect" href="https://www.googletagmanager.com">
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap"></noscript>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"></noscript>
 <link rel="stylesheet" href="style.css">
-<link rel="preload" as="image" href="assets/images/posters/horizontal1.jpg" fetchpriority="high">
 
 <!-- ProfessionalService schema -->
 <script type="application/ld+json">
@@ -166,6 +164,15 @@
 }
 </script>
 
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-PFCRN2F004"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-PFCRN2F004');
+</script>
+
 </head>
 <body>
 <noscript><style>
@@ -282,7 +289,7 @@
 
   <div class="work-grid reveal-stagger" id="workGrid">
     <div class="work-card work-card--featured" data-category="film" data-video="assets/videos/horizontal1.mp4" data-poster="assets/images/posters/horizontal1.jpg" data-autoplay="true" tabindex="0" role="button" aria-label="Play project: Monsoon Diaries, Narrative film">
-      <video muted loop playsinline preload="metadata" poster="assets/images/posters/horizontal1.jpg" fetchpriority="high"></video>
+      <video muted loop playsinline preload="metadata" poster="assets/images/posters/horizontal1.jpg"></video>
       <div class="card-fallback"><span class="card-fallback-mark">CINEXA</span></div>
       <button type="button" class="mute-btn" aria-label="Toggle sound" aria-pressed="false">
         <svg class="icon-muted" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
@@ -592,23 +599,20 @@
     <p class="contact-note mono-tag">Usually replies within 24 hours</p>
   </div>
 
-  <form class="contact-form" id="contactForm" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+  <form class="contact-form" id="contactForm" action="mailto:officialcinexastudio@gmail.com" method="post" enctype="text/plain">
     <div class="form-row">
       <label class="mono-tag" for="cf-name">Name</label>
-      <input type="text" id="cf-name" name="name" required autocomplete="name">
+      <input type="text" id="cf-name" name="Name" required autocomplete="name">
     </div>
     <div class="form-row">
       <label class="mono-tag" for="cf-email">Email</label>
-      <input type="email" id="cf-email" name="email" required autocomplete="email">
+      <input type="email" id="cf-email" name="Email" required autocomplete="email">
     </div>
     <div class="form-row">
       <label class="mono-tag" for="cf-project">Tell us about your project</label>
-      <textarea id="cf-project" name="message" rows="4" required></textarea>
+      <textarea id="cf-project" name="Project" rows="4" required></textarea>
     </div>
-    <input type="text" name="_gotcha" style="display:none" tabindex="-1" autocomplete="off">
-    <button type="submit" class="btn btn-primary form-submit">
-      <span class="form-submit-label">Send Inquiry</span>
-    </button>
+    <button type="submit" class="btn btn-primary form-submit">Send Inquiry</button>
     <p class="form-hint mono-tag" id="formHint" role="status" aria-live="polite"></p>
   </form>
 </section>
@@ -668,15 +672,6 @@
   </div>
 </div>
 
-<script src="script.js" defer></script>
-
-<!-- Google tag (gtag.js) — loaded last, after critical content -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-PFCRN2F004"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-PFCRN2F004');
-</script>
+<script src="script.js"></script>
 </body>
 </html>
