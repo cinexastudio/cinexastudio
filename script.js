@@ -7,6 +7,23 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ---------------- page load fade-in ---------------- */
   requestAnimationFrame(() => document.body.classList.add('is-loaded'));
 
+  /* ---------------- scroll reveal (fade + rise on entry) ---------------- */
+  const revealTargets = document.querySelectorAll('.reveal, .reveal-stagger');
+  if ('IntersectionObserver' in window && revealTargets.length) {
+    const revealIO = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          revealIO.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -80px 0px' });
+    revealTargets.forEach(el => revealIO.observe(el));
+  } else {
+    // No IntersectionObserver support: show content immediately, no reveal animation.
+    revealTargets.forEach(el => el.classList.add('is-visible'));
+  }
+
   /* ---------------- home button: force scroll to top ---------------- */
   document.querySelectorAll('a[href="#top"]').forEach(link => {
     link.addEventListener('click', (e) => {
@@ -101,8 +118,22 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!lightbox.classList.contains('open')) return;
     if (e.key === 'Escape') { closeLightbox(); return; }
     if (e.key === 'Tab') {
-      e.preventDefault();
-      lightboxClose.focus();
+      // Cycle focus between the two focusable elements in the lightbox
+      // (close button and the video's native controls) instead of always
+      // snapping back to close — otherwise the video controls (play,
+      // seek, volume) are unreachable by keyboard.
+      const focused = document.activeElement;
+      if (e.shiftKey) {
+        if (focused === lightboxClose) {
+          e.preventDefault();
+          lightboxVideo.focus();
+        }
+      } else {
+        if (focused === lightboxVideo || !lightbox.contains(focused)) {
+          e.preventDefault();
+          lightboxClose.focus();
+        }
+      }
     }
   });
 
@@ -217,20 +248,61 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  /* ---------------- about image fallback ---------------- */
-  const aboutImg = document.querySelector('.about-media img');
-  if (aboutImg && aboutImg.complete && aboutImg.naturalWidth === 0) {
-    aboutImg.style.display = 'none';
-    const fb = aboutImg.nextElementSibling;
-    if (fb) fb.classList.add('is-visible');
-  }
+  /* ---------------- about image fallback ----------------
+     Handled entirely via the inline onerror attribute on the
+     <img> itself (tries jpg/jpeg/png/webp, then reveals the
+     .about-fallback initials). No JS needed here. */
 
   /* ---------------- contact form ---------------- */
   const contactForm = document.getElementById('contactForm');
   const formHint = document.getElementById('formHint');
+  const formSubmitBtn = contactForm ? contactForm.querySelector('.form-submit') : null;
+  const formSubmitLabel = contactForm ? contactForm.querySelector('.form-submit-label') : null;
+
   if (contactForm && formHint) {
-    contactForm.addEventListener('submit', () => {
-      formHint.textContent = "Opening your email app to send this…";
+    contactForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      if (formSubmitBtn) formSubmitBtn.disabled = true;
+      if (formSubmitLabel) formSubmitLabel.textContent = 'Sending…';
+      formHint.classList.remove('form-hint--error', 'form-hint--success');
+      formHint.textContent = 'Sending your inquiry…';
+
+      const formData = new FormData(contactForm);
+
+      try {
+        const response = await fetch(contactForm.action, {
+          method: 'POST',
+          body: formData,
+          headers: { 'Accept': 'application/json' }
+        });
+
+        if (response.ok) {
+          formHint.textContent = "Thanks! Your inquiry is in — we'll reply within 24 hours.";
+          formHint.classList.add('form-hint--success');
+          contactForm.reset();
+          trackEvent('contact_form_submit', { method: 'formspree' });
+        } else {
+          throw new Error('Form endpoint returned an error');
+        }
+      } catch (err) {
+        // Network/config issue — fall back to opening the user's email app
+        // with the message pre-filled, so the inquiry is never lost.
+        const name = formData.get('name') || '';
+        const email = formData.get('email') || '';
+        const message = formData.get('message') || '';
+        const subject = encodeURIComponent('New project inquiry from ' + name);
+        const body = encodeURIComponent('Name: ' + name + '\nEmail: ' + email + '\n\n' + message);
+        const mailtoLink = 'mailto:officialcinexastudio@gmail.com?subject=' + subject + '&body=' + body;
+
+        formHint.textContent = "Couldn't submit directly — opening your email app instead…";
+        formHint.classList.add('form-hint--error');
+        window.location.href = mailtoLink;
+        trackEvent('contact_form_fallback', { method: 'mailto' });
+      } finally {
+        if (formSubmitBtn) formSubmitBtn.disabled = false;
+        if (formSubmitLabel) formSubmitLabel.textContent = 'Send Inquiry';
+      }
     });
   }
 
