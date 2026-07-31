@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           lazyIO.unobserve(card);
         });
-      }, { rootMargin: '200px 0px' })
+      }, { rootMargin: '600px 0px' })
     : null;
 
   cards.forEach(card => {
@@ -165,19 +165,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (isAutoplay && video && src) {
       // Featured card: load immediately (not lazy) and loop continuously, muted.
+      video.preload = 'auto';
       video.src = src;
       attachVideoFallback(video);
-      video.play().catch(() => {
-        // Autoplay can be blocked before user interaction on some browsers;
-        // retry on first user interaction with the page.
-        const retryPlay = () => {
-          video.play().catch(() => {});
-          document.removeEventListener('click', retryPlay);
-          document.removeEventListener('touchstart', retryPlay);
-        };
-        document.addEventListener('click', retryPlay, { once: true });
-        document.addEventListener('touchstart', retryPlay, { once: true });
-      });
+
+      // Autoplay can be blocked before user interaction on some browsers.
+      // Keep retrying (not just once) on the next few interaction signals,
+      // and also retry once the browser reports enough data is buffered —
+      // a previous failed attempt may have been due to the file not being
+      // ready yet, not just an autoplay-policy block.
+      let autoplayStarted = false;
+      const retryEvents = ['click', 'touchstart', 'scroll', 'keydown'];
+      const tryAutoplay = () => {
+        if (autoplayStarted) return;
+        video.play().then(() => {
+          autoplayStarted = true;
+          video.removeEventListener('canplay', tryAutoplay);
+          retryEvents.forEach(evt => document.removeEventListener(evt, tryAutoplay));
+        }).catch(() => {});
+      };
+      tryAutoplay();
+      video.addEventListener('canplay', tryAutoplay);
+      retryEvents.forEach(evt => document.addEventListener(evt, tryAutoplay, { passive: true }));
     } else if (lazyIO) {
       lazyIO.observe(card);
     } else if (video && src) {
@@ -186,11 +195,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (!isAutoplay) {
+      // Track a pending "settle" timer so rapid mouse in/out (common while
+      // scrolling past a grid of cards) doesn't restart the video from 0
+      // every time — that re-triggers buffering and looks like stutter.
+      let leaveTimer = null;
+
       card.addEventListener('mouseenter', () => {
+        clearTimeout(leaveTimer);
         if (video && video.src) video.play().catch(() => {});
       });
       card.addEventListener('mouseleave', () => {
-        if (video) { video.pause(); video.currentTime = 0; }
+        if (!video) return;
+        // Wait slightly before pausing/resetting: if the user re-enters
+        // within this window (e.g. scrolling past several cards), we skip
+        // the reset entirely and the video just keeps playing smoothly.
+        leaveTimer = setTimeout(() => {
+          video.pause();
+          video.currentTime = 0;
+        }, 400);
       });
     }
 
@@ -253,57 +275,51 @@ document.addEventListener('DOMContentLoaded', () => {
      <img> itself (tries jpg/jpeg/png/webp, then reveals the
      .about-fallback initials). No JS needed here. */
 
-  /* ---------------- contact form ---------------- */
-  const contactForm = document.getElementById('contactForm');
+  /* ---------------- enquiry form (NueForm embed) ----------------
+     Hides the loader once the iframe finishes loading, tracks a
+     GA4 event when the enquiry form comes into view, and swaps
+     in a clear fallback message if the embed takes too long or
+     fails (ad-blockers / slow networks / offline). */
+  const enquiryFrame = document.getElementById('enquiryFormIframe');
+  const enquiryLoader = document.getElementById('enquiryFormLoader');
+  const enquiryWrap = document.getElementById('enquiryFormWrap');
   const formHint = document.getElementById('formHint');
-  const formSubmitBtn = contactForm ? contactForm.querySelector('.form-submit') : null;
-  const formSubmitLabel = contactForm ? contactForm.querySelector('.form-submit-label') : null;
 
-  if (contactForm && formHint) {
-    contactForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
+  if (enquiryFrame && enquiryLoader) {
+    let enquiryLoaded = false;
 
-      if (formSubmitBtn) formSubmitBtn.disabled = true;
-      if (formSubmitLabel) formSubmitLabel.textContent = 'Sending…';
-      formHint.classList.remove('form-hint--error', 'form-hint--success');
-      formHint.textContent = 'Sending your inquiry…';
+    const hideLoader = () => {
+      enquiryLoaded = true;
+      enquiryLoader.classList.add('is-hidden');
+    };
 
-      const formData = new FormData(contactForm);
-
-      try {
-        const response = await fetch(contactForm.action, {
-          method: 'POST',
-          body: formData,
-          headers: { 'Accept': 'application/json' }
-        });
-
-        if (response.ok) {
-          formHint.textContent = "Thanks! Your inquiry is in — we'll reply within 24 hours.";
-          formHint.classList.add('form-hint--success');
-          contactForm.reset();
-          trackEvent('contact_form_submit', { method: 'formspree' });
-        } else {
-          throw new Error('Form endpoint returned an error');
-        }
-      } catch (err) {
-        // Network/config issue — fall back to opening the user's email app
-        // with the message pre-filled, so the inquiry is never lost.
-        const name = formData.get('name') || '';
-        const email = formData.get('email') || '';
-        const message = formData.get('message') || '';
-        const subject = encodeURIComponent('New project inquiry from ' + name);
-        const body = encodeURIComponent('Name: ' + name + '\nEmail: ' + email + '\n\n' + message);
-        const mailtoLink = 'mailto:officialcinexastudio@gmail.com?subject=' + subject + '&body=' + body;
-
-        formHint.textContent = "Couldn't submit directly — opening your email app instead…";
-        formHint.classList.add('form-hint--error');
-        window.location.href = mailtoLink;
-        trackEvent('contact_form_fallback', { method: 'mailto' });
-      } finally {
-        if (formSubmitBtn) formSubmitBtn.disabled = false;
-        if (formSubmitLabel) formSubmitLabel.textContent = 'Send Inquiry';
-      }
+    enquiryFrame.addEventListener('load', () => {
+      hideLoader();
+      trackEvent('enquiry_form_loaded', { form_provider: 'nueform' });
     });
+
+    // Fallback: if the iframe hasn't fired 'load' within 8s
+    // (blocked, offline, slow network), tell the user clearly
+    // and point them to the direct link / WhatsApp instead.
+    window.setTimeout(() => {
+      if (!enquiryLoaded && formHint) {
+        formHint.innerHTML =
+          'Form is taking a while to load — <a href="https://nueform.io/f/W8zEcZDJsB" target="_blank" rel="noopener">open it directly here</a> or message us on WhatsApp.';
+      }
+    }, 8000);
+
+    // Track the enquiry form entering the viewport (once).
+    if (enquiryWrap && 'IntersectionObserver' in window) {
+      const enquiryObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            trackEvent('enquiry_form_view', { form_provider: 'nueform' });
+            enquiryObserver.disconnect();
+          }
+        });
+      }, { threshold: 0.4 });
+      enquiryObserver.observe(enquiryWrap);
+    }
   }
 
   /* ============================================================
