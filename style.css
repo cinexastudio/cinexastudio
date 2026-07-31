@@ -41,7 +41,7 @@ body{
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   opacity: 0;
-  animation: bodyFallbackShow 0s .3s forwards;
+  animation: bodyFallbackShow 0s 2.5s forwards;
   transition: opacity .6s ease;
   overflow-x: hidden;
 }
@@ -170,7 +170,8 @@ section{ padding: var(--section-pad) 0; }
   pointer-events:none; text-align:center; padding: 8px; z-index: 1;
 }
 .about-fallback.is-visible, .lightbox-fallback.is-visible{ display:flex; }
-.card-fallback, .card-fallback.is-visible{ display:none !important; } /* work-card text fallback disabled — poster/video always shown instead */
+.card-fallback{ display:none; } /* hidden by default — poster/video shown instead */
+.card-fallback.is-visible{ display:flex; } /* shown by JS only if the video actually fails to load */
 .card-fallback-mark{
   font-family: var(--font-display); font-weight:400; text-transform:uppercase;
   font-size: 16px; letter-spacing:.08em; color: var(--paper-dim); opacity:.55;
@@ -438,20 +439,26 @@ section{ padding: var(--section-pad) 0; }
 .work-card:hover .play-icon:hover{ background: var(--accent); color: var(--bg); }
 .work-card video{
   position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
-  opacity:.55; filter: grayscale(.5);
-  transition: opacity .5s ease, transform 6s ease, filter .5s ease;
+  opacity:.55;
+  /* GPU-only properties (transform + opacity) so the compositor can animate
+     this without repainting the live video frame-by-frame. filter:grayscale
+     was removed here — animating filter on a playing <video> forces a full
+     repaint on every frame and was the main cause of stutter on hover. */
+  transform: translateZ(0) scale(1);
+  will-change: transform, opacity;
+  transition: opacity .5s ease, transform .5s ease;
 }
 .work-card:hover video, .work-card:focus-visible video{
-  opacity:1; transform: scale(1.04); filter: grayscale(0);
+  opacity:1; transform: translateZ(0) scale(1.04);
 }
 .work-card--vertical:hover video, .work-card--vertical:focus-visible video{
-  transform: scale(1); /* reels: no zoom on hover, brightness/colour change only */
+  transform: translateZ(0) scale(1); /* reels: no zoom on hover, brightness change only */
 }
 .work-card--featured video{
-  opacity:1; filter: grayscale(0);
+  opacity:1;
 }
 .work-card--featured:hover video, .work-card--featured:focus-visible video{
-  transform: scale(1.04);
+  transform: translateZ(0) scale(1.04);
 }
 .work-info{
   position:absolute; left:20px; right:20px; bottom:18px; z-index:2;
@@ -628,10 +635,63 @@ section{ padding: var(--section-pad) 0; }
   outline:none; border-color: var(--accent);
 }
 .form-submit{ align-self:flex-start; }
-.form-submit:disabled{ opacity:.6; cursor:not-allowed; }
 .form-hint{ color: var(--accent); min-height: 14px; }
-.form-hint--success{ color: #6FCF97; }
-.form-hint--error{ color: var(--accent); }
+
+/* ---- Enquiry form (NueForm embed) ---- */
+.enquiry-form-wrap{
+  max-width: 720px; margin: 56px auto 0; text-align:left;
+}
+.enquiry-form-frame{
+  position: relative;
+  width: 100%;
+  min-height: 720px;
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  transition: border-color .25s ease;
+}
+.enquiry-form-frame:hover{ border-color: var(--accent); }
+.enquiry-form-frame iframe{
+  position: relative;
+  z-index: 2;
+  display: block;
+  width: 100%;
+  height: 720px;
+  border: 0;
+  background: transparent;
+}
+.enquiry-form-loader{
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--paper-dim);
+}
+.enquiry-form-loader.is-hidden{ display: none; }
+.enquiry-loader-dot{
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent);
+  animation: enquiryPulse 1s ease-in-out infinite;
+}
+@keyframes enquiryPulse{
+  0%, 100%{ opacity: .3; transform: scale(.85); }
+  50%{ opacity: 1; transform: scale(1.1); }
+}
+.enquiry-form-wrap .form-hint{
+  margin-top: 14px; text-align: center;
+}
+.enquiry-form-wrap .form-hint a{
+  color: var(--accent); border-bottom: 1px solid transparent;
+  transition: border-color .2s ease;
+}
+.enquiry-form-wrap .form-hint a:hover{ border-color: var(--accent); }
+
+@media (max-width: 640px){
+  .enquiry-form-frame, .enquiry-form-frame iframe{ min-height: 620px; height: 620px; }
+}
 
 .whatsapp-fab{
   position: fixed; right: 24px; bottom: 24px; z-index: 500;
