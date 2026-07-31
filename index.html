@@ -594,27 +594,29 @@
     <h2 class="section-title">Let's finish your story.</h2>
   </div>
   <div class="contact-links">
-    <a href="mailto:officialcinexastudio@gmail.com" class="contact-email">officialcinexastudio@gmail.com</a>
+    <a href="officialcinexastudio@gmail.com" class="contact-email">officialcinexastudio@gmail.com</a>
     <a href="tel:+919325616077" class="contact-phone mono-tag">+91 93256 16077</a>
     <p class="contact-note mono-tag">Usually replies within 24 hours</p>
   </div>
 
-  <form class="contact-form" id="contactForm" action="mailto:officialcinexastudio@gmail.com" method="post" enctype="text/plain">
-    <div class="form-row">
-      <label class="mono-tag" for="cf-name">Name</label>
-      <input type="text" id="cf-name" name="Name" required autocomplete="name">
+  <div class="enquiry-form-wrap reveal" id="enquiryFormWrap">
+    <div class="enquiry-form-frame">
+      <div class="enquiry-form-loader" id="enquiryFormLoader">
+        <span class="enquiry-loader-dot"></span>
+        <span class="mono-tag">Loading enquiry form&hellip;</span>
+      </div>
+      <iframe
+        id="enquiryFormIframe"
+        src="https://nueform.io/f/W8zEcZDJsB"
+        title="Cinexa Studio project enquiry form"
+        loading="lazy"
+        allow="clipboard-write"
+      ></iframe>
     </div>
-    <div class="form-row">
-      <label class="mono-tag" for="cf-email">Email</label>
-      <input type="email" id="cf-email" name="Email" required autocomplete="email">
-    </div>
-    <div class="form-row">
-      <label class="mono-tag" for="cf-project">Tell us about your project</label>
-      <textarea id="cf-project" name="Project" rows="4" required></textarea>
-    </div>
-    <button type="submit" class="btn btn-primary form-submit">Send Inquiry</button>
-    <p class="form-hint mono-tag" id="formHint" role="status" aria-live="polite"></p>
-  </form>
+    <p class="form-hint mono-tag" id="formHint" role="status" aria-live="polite">
+      Form not loading? <a href="https://nueform.io/f/W8zEcZDJsB" target="_blank" rel="noopener">Open it in a new tab &rarr;</a>
+    </p>
+  </div>
 </section>
 
 <!-- ================= WHATSAPP FAB ================= -->
@@ -645,7 +647,7 @@
     </div>
     <div class="footer-col">
       <span class="mono-tag footer-label">[ Inquiries ]</span>
-      <a href="mailto:officialcinexastudio@gmail.com">officialcinexastudio@gmail.com</a>
+      <a href="officialcinexastudio@gmail.com">officialcinexastudio@gmail.com</a>
       <a href="tel:+919325616077">+91 93256 16077</a>
     </div>
     <div class="footer-col">
