@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           lazyIO.unobserve(card);
         });
-      }, { rootMargin: '600px 0px' })
+      }, { rootMargin: '200px 0px' })
     : null;
 
   cards.forEach(card => {
@@ -164,18 +164,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const muteBtn = card.querySelector('.mute-btn');
 
     if (isAutoplay && video && src) {
-      // Featured card: load immediately (not lazy) and loop continuously, muted.
-      video.preload = 'auto';
+      // Featured card: only fetch enough to start playback (metadata + a
+      // little buffer), not the whole file — 'auto' was forcing a full
+      // download of the hero video before the page even finished loading.
+      video.preload = 'metadata';
       video.src = src;
       attachVideoFallback(video);
 
       // Autoplay can be blocked before user interaction on some browsers.
-      // Keep retrying (not just once) on the next few interaction signals,
-      // and also retry once the browser reports enough data is buffered —
-      // a previous failed attempt may have been due to the file not being
-      // ready yet, not just an autoplay-policy block.
+      // Retry once on the first real interaction signal and once the
+      // browser reports it can play — but don't keep re-attempting on
+      // every scroll/keydown, which was calling .play() repeatedly while
+      // the user scrolled and adding needless work during scroll.
       let autoplayStarted = false;
-      const retryEvents = ['click', 'touchstart', 'scroll', 'keydown'];
+      const retryEvents = ['click', 'touchstart', 'keydown'];
       const tryAutoplay = () => {
         if (autoplayStarted) return;
         video.play().then(() => {
@@ -185,8 +187,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }).catch(() => {});
       };
       tryAutoplay();
-      video.addEventListener('canplay', tryAutoplay);
-      retryEvents.forEach(evt => document.addEventListener(evt, tryAutoplay, { passive: true }));
+      video.addEventListener('canplay', tryAutoplay, { once: true });
+      retryEvents.forEach(evt => document.addEventListener(evt, tryAutoplay, { passive: true, once: true }));
     } else if (lazyIO) {
       lazyIO.observe(card);
     } else if (video && src) {
